@@ -14,23 +14,23 @@ COUNTS_FILE = DATA_DIR / "counts.json"
 CONTACT_EMAIL = "servicing@houseofservicing.com"
 
 STATUS_LABELS = {
-    "live": ("En production", "#16a34a"),
-    "beta": ("Bêta", "#d97706"),
-    "dev": ("En développement", "#64748b"),
+    "live": ("Live", "#16a34a"),
+    "beta": ("Beta", "#d97706"),
+    "dev": ("In development", "#64748b"),
 }
 
 CATEGORY_THEMES = {
-    "Réconciliation": "#2563eb",
-    "Reporting & Pilotage": "#7c3aed",
-    "Paiements & Encaissements": "#0891b2",
-    "Conformité & Contrôle": "#dc2626",
-    "Relation Client": "#db2777",
-    "Gestion des Données": "#059669",
+    "Reconciliation": "#2563eb",
+    "Reporting & Monitoring": "#7c3aed",
+    "Payments & Collections": "#0891b2",
+    "Compliance & Controls": "#dc2626",
+    "Client Relations": "#db2777",
+    "Data Management": "#059669",
 }
 DEFAULT_THEME = "#475569"
 
 st.set_page_config(
-    page_title="House of Servicing — Portail des Services",
+    page_title="House of Servicing — Service Portal",
     page_icon="🏛️",
     layout="wide",
 )
@@ -80,7 +80,7 @@ def inject_styles():
     st.markdown(
         """
         <style>
-        /* Theme forcé en CSS : indépendant de config.toml (Domino, proxys, etc.) */
+        /* Theme forced via CSS: independent of config.toml (Domino, proxies, etc.) */
         .stApp, [data-testid="stAppViewContainer"] { background-color: #0f172a; color: #e2e8f0; }
         [data-testid="stHeader"] { background: transparent; }
         section[data-testid="stSidebar"] { background-color: #1e293b; }
@@ -130,7 +130,7 @@ def inject_styles():
         .hos-count {
             font-size: .78rem; color: #38bdf8; font-weight: 600; margin: .6rem 0 .1rem;
         }
-        /* CTA natif Streamlit stylé en bouton bleu */
+        /* Native Streamlit CTA styled as a blue button */
         div[data-testid="stButton"] > button {
             background: #2563eb; color: #fff; font-weight: 600; border: none;
             border-radius: 10px; padding: .5rem; width: 100%;
@@ -146,7 +146,7 @@ def inject_styles():
 def render_card(service, counts):
     color = category_color(service["category"])
     status_label, status_color = STATUS_LABELS.get(
-        service["status"], ("Inconnu", "#64748b")
+        service["status"], ("Unknown", "#64748b")
     )
     tags_html = "".join(
         f"<span class='hos-tag'>#{t}</span>" for t in service.get("tags", [])
@@ -166,17 +166,17 @@ def render_card(service, counts):
                 <h3>{service['name']}</h3>
                 <span class="hos-badge" style="background:{status_color};">{status_label}</span>
                 <div class="hos-desc">{service['description']}</div>
-                <div class="hos-meta">⏱️ {service['frequency']} · 💪 ~{service['time_saved_h']} h/exécution économisées</div>
+                <div class="hos-meta">⏱️ {service['frequency']} · 💪 ~{service['time_saved_h']} h saved/run</div>
                 <div class="hos-meta">👥 {service['owner']}</div>
                 <div>{tags_html}</div>
-                <div class="hos-count">👆 {n_clicks} ouverture(s)</div>
+                <div class="hos-count">👆 {n_clicks} open(s)</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
         if is_live:
             st.button(
-                "Accéder au service →",
+                "Open service →",
                 key=f"open_{sid}",
                 on_click=increment_count,
                 args=(sid, service["url"]),
@@ -184,7 +184,7 @@ def render_card(service, counts):
             )
         else:
             st.button(
-                "Bientôt disponible",
+                "Coming soon",
                 key=f"open_{sid}",
                 disabled=True,
                 use_container_width=True,
@@ -195,11 +195,11 @@ def page_marketplace(services):
     st.markdown(
         f"""
         <div class="hos-hero">
-            <h1>🏛️ Portail des Services — House of Servicing</h1>
-            <p>La marketplace de l'équipe Servicing. Vos macros d'hier deviennent des services
-            centralisés, fiables et accessibles en un clic.</p>
+            <h1>🏛️ Service Portal — House of Servicing</h1>
+            <p>The Servicing team's marketplace. Yesterday's macros become centralized,
+            reliable services available in a single click.</p>
             <p style="font-size:.92rem;opacity:.85;margin-top:.6rem;">
-                ✉️ Une question, une demande&nbsp;? Écrivez-nous :
+                ✉️ A question or a request? Reach us at:
                 <a href="mailto:{CONTACT_EMAIL}" style="color:#bfdbfe;font-weight:600;">{CONTACT_EMAIL}</a>
             </p>
         </div>
@@ -209,19 +209,19 @@ def page_marketplace(services):
 
     st.markdown(
         """
-        #### À quoi sert ce portail&nbsp;?
-        L'équipe Servicing s'appuie sur de nombreuses **macros Excel/VBA** dispersées sur les postes.
-        Ce portail les **rassemble en un point d'entrée unique** : chaque traitement est progressivement
-        **industrialisé en service Python**, puis publié ici sous forme de vignette renvoyant directement
-        vers l'outil en ligne.
+        #### What is this portal for?
+        The Servicing team relies on many **Excel/VBA macros** scattered across workstations.
+        This portal **brings them together in a single entry point**: each process is gradually
+        **industrialized into a Python service**, then published here as a tile linking directly
+        to the online tool.
         """
     )
     st.markdown(
         """
-        - 🎯 **Trouver** le bon outil sans chercher dans les fichiers partagés
-        - 🛡️ **Fiabiliser** : des services maintenus et versionnés, plus des macros locales
-        - 📊 **Mesurer** le temps gagné et savoir qui maintient quoi
-        - ➕ **Proposer** une nouvelle macro à industrialiser via l'onglet dédié
+        - 🎯 **Find** the right tool without digging through shared drives
+        - 🛡️ **Trust** maintained, versioned services instead of local macros
+        - 📊 **Measure** time saved and know who owns what
+        - ➕ **Request** a new macro to industrialize via the dedicated tab
         """
     )
     st.divider()
@@ -233,26 +233,26 @@ def page_marketplace(services):
     total_clicks = sum(counts.values())
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Services au catalogue", len(services))
-    c2.metric("En production", live_count)
-    c3.metric("Ouvertures cumulées", total_clicks)
-    c4.metric("Heures économisées / cycle", f"~{total_saved} h")
+    c1.metric("Services in catalog", len(services))
+    c2.metric("Live", live_count)
+    c3.metric("Total opens", total_clicks)
+    c4.metric("Hours saved / cycle", f"~{total_saved} h")
 
     st.divider()
 
     fcol1, fcol2, fcol3 = st.columns([2, 1.3, 1.3])
-    query = fcol1.text_input("🔎 Rechercher un service", placeholder="nom, mot-clé, tag...")
-    cat_filter = fcol2.selectbox("Catégorie", ["Toutes"] + categories)
+    query = fcol1.text_input("🔎 Search a service", placeholder="name, keyword, tag...")
+    cat_filter = fcol2.selectbox("Category", ["All"] + categories)
     status_filter = fcol3.selectbox(
-        "Statut", ["Tous", "En production", "Bêta", "En développement"]
+        "Status", ["All", "Live", "Beta", "In development"]
     )
 
-    status_map = {"En production": "live", "Bêta": "beta", "En développement": "dev"}
+    status_map = {"Live": "live", "Beta": "beta", "In development": "dev"}
 
     def matches(s):
-        if cat_filter != "Toutes" and s["category"] != cat_filter:
+        if cat_filter != "All" and s["category"] != cat_filter:
             return False
-        if status_filter != "Tous" and s["status"] != status_map[status_filter]:
+        if status_filter != "All" and s["status"] != status_map[status_filter]:
             return False
         if query:
             blob = " ".join(
@@ -265,10 +265,10 @@ def page_marketplace(services):
     filtered = [s for s in services if matches(s)]
 
     if not filtered:
-        st.info("Aucun service ne correspond à votre recherche.")
+        st.info("No service matches your search.")
         return
 
-    st.caption(f"{len(filtered)} service(s) affiché(s)")
+    st.caption(f"{len(filtered)} service(s) shown")
     cols_per_row = 3
     for i in range(0, len(filtered), cols_per_row):
         row = st.columns(cols_per_row)
@@ -282,42 +282,42 @@ def page_marketplace(services):
             f"""
             <script>window.open({json.dumps(pending)}, "_blank");</script>
             <div style="font-family:sans-serif;font-size:.85rem;">
-                ↗ Le service s'ouvre dans un nouvel onglet.
-                <a href={json.dumps(pending)} target="_blank">Cliquez ici si rien ne se passe.</a>
+                ↗ The service is opening in a new tab.
+                <a href={json.dumps(pending)} target="_blank">Click here if nothing happens.</a>
             </div>
             """,
             height=40,
         )
 
 
-def page_propose(services):
-    st.header("➕ Proposer un nouveau service")
+def page_request(services):
+    st.header("➕ Request a new service")
     st.write(
-        "Une macro à industrialiser ? Décrivez le besoin : l'équipe d'industrialisation "
-        "le transformera en service Python centralisé."
+        "Have a macro to industrialize? Describe the need: the industrialization team "
+        "will turn it into a centralized Python service."
     )
 
     categories = sorted({s["category"] for s in services})
 
-    with st.form("propose_form", clear_on_submit=True):
-        name = st.text_input("Nom du service *")
+    with st.form("request_form", clear_on_submit=True):
+        name = st.text_input("Service name *")
         col1, col2 = st.columns(2)
-        category = col1.selectbox("Catégorie *", categories + ["Autre"])
+        category = col1.selectbox("Category *", categories + ["Other"])
         frequency = col2.selectbox(
-            "Fréquence d'utilisation", ["Quotidien", "Hebdomadaire", "Mensuel", "Ponctuel"]
+            "Usage frequency", ["Daily", "Weekly", "Monthly", "Ad hoc"]
         )
-        description = st.text_area("Description du besoin *")
+        description = st.text_area("Describe the need *")
         col3, col4 = st.columns(2)
-        origin_macro = col3.text_input("Macro d'origine (fichier .xlsm)")
+        origin_macro = col3.text_input("Source macro (.xlsm file)")
         time_saved = col4.number_input(
-            "Temps économisé estimé (h / exécution)", min_value=0.0, value=1.0, step=0.5
+            "Estimated time saved (h / run)", min_value=0.0, value=1.0, step=0.5
         )
-        requester = st.text_input("Votre nom / pôle *")
-        submitted = st.form_submit_button("Soumettre la demande")
+        requester = st.text_input("Your name / team *")
+        submitted = st.form_submit_button("Submit request")
 
         if submitted:
             if not (name and description and requester):
-                st.error("Merci de renseigner les champs obligatoires (*).")
+                st.error("Please fill in the required fields (*).")
             else:
                 save_request(
                     {
@@ -328,16 +328,16 @@ def page_propose(services):
                         "origin_macro": origin_macro,
                         "time_saved_h": time_saved,
                         "requester": requester,
-                        "status": "demandé",
+                        "status": "requested",
                         "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
                     }
                 )
-                st.success(f"Demande « {name} » enregistrée. Merci !")
+                st.success(f"Request “{name}” saved. Thank you!")
 
     requests = load_requests()
     if requests:
         st.divider()
-        st.subheader(f"📋 Demandes en cours ({len(requests)})")
+        st.subheader(f"📋 Open requests ({len(requests)})")
         df = pd.DataFrame(requests)
         cols = [
             c
@@ -348,32 +348,32 @@ def page_propose(services):
 
 
 def page_dashboard(services):
-    st.header("📈 Tableau de bord du catalogue")
+    st.header("📈 Catalog dashboard")
     df = pd.DataFrame(services)
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Total services", len(df))
-    c2.metric("Heures économisées / cycle", f"~{int(df['time_saved_h'].sum())} h")
-    c3.metric("Catégories couvertes", df["category"].nunique())
+    c2.metric("Hours saved / cycle", f"~{int(df['time_saved_h'].sum())} h")
+    c3.metric("Categories covered", df["category"].nunique())
 
     st.divider()
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("Services par catégorie")
+        st.subheader("Services by category")
         st.bar_chart(df["category"].value_counts())
     with col2:
-        st.subheader("Heures économisées par catégorie")
+        st.subheader("Hours saved by category")
         st.bar_chart(df.groupby("category")["time_saved_h"].sum())
 
     st.divider()
-    st.subheader("Répartition par statut")
+    st.subheader("Breakdown by status")
     status_names = df["status"].map(lambda s: STATUS_LABELS.get(s, ("?",))[0])
     st.bar_chart(status_names.value_counts())
 
     counts = load_counts()
     if counts:
         st.divider()
-        st.subheader("Services les plus ouverts")
+        st.subheader("Most opened services")
         id_to_name = {s["id"]: s["name"] for s in services}
         ranking = (
             pd.Series({id_to_name.get(k, k): v for k, v in counts.items()})
@@ -382,52 +382,52 @@ def page_dashboard(services):
         st.bar_chart(ranking)
 
     st.divider()
-    st.subheader("Détail du catalogue")
+    st.subheader("Catalog details")
     view = df[
         ["name", "category", "status", "frequency", "time_saved_h", "owner", "origin_macro"]
     ].rename(
         columns={
             "name": "Service",
-            "category": "Catégorie",
-            "status": "Statut",
-            "frequency": "Fréquence",
-            "time_saved_h": "Heures éco.",
-            "owner": "Pôle",
-            "origin_macro": "Macro d'origine",
+            "category": "Category",
+            "status": "Status",
+            "frequency": "Frequency",
+            "time_saved_h": "Hours saved",
+            "owner": "Team",
+            "origin_macro": "Source macro",
         }
     )
     st.dataframe(view, use_container_width=True, hide_index=True)
 
 
 def page_about():
-    st.header("ℹ️ À propos du portail")
+    st.header("ℹ️ About this portal")
     st.markdown(
         """
-        **House of Servicing — Portail des Services** centralise les traitements de
-        l'équipe Servicing au sein d'une marketplace unique.
+        **House of Servicing — Service Portal** centralizes the Servicing team's
+        processes within a single marketplace.
 
-        ### Le principe
-        L'équipe maintient de nombreuses **macros Excel/VBA**. Chaque macro est
-        progressivement **industrialisée en service Python** puis publiée ici sous
-        forme de vignette renvoyant vers le service en ligne.
+        ### The principle
+        The team maintains many **Excel/VBA macros**. Each macro is gradually
+        **industrialized into a Python service**, then published here as a tile
+        linking to the online service.
 
-        ### Pourquoi
-        - **Centraliser** : un point d'entrée unique au lieu de fichiers éparpillés.
-        - **Fiabiliser** : des services versionnés et maintenus, plutôt que des macros locales.
-        - **Tracer** : visibilité sur l'usage, les pôles propriétaires et les gains de temps.
-        - **Industrialiser** : un parcours clair du VBA vers le service Python.
+        ### Why
+        - **Centralize**: a single entry point instead of scattered files.
+        - **Make reliable**: versioned, maintained services rather than local macros.
+        - **Track**: visibility on usage, owning teams and time savings.
+        - **Industrialize**: a clear path from VBA to Python service.
 
-        ### Cycle de vie d'un service
-        `Macro VBA` → `Demande d'industrialisation` → `En développement` →
-        `Bêta` → `En production`
+        ### A service lifecycle
+        `VBA macro` → `Industrialization request` → `In development` →
+        `Beta` → `Live`
 
-        ### Ajouter / modifier un service
-        Le catalogue est piloté par le fichier `data/services.json`. Ajoutez-y une entrée
-        et elle apparaîtra automatiquement dans la marketplace.
+        ### Add / edit a service
+        The catalog is driven by the `data/services.json` file. Add an entry there
+        and it will automatically appear in the marketplace.
         """
     )
     st.divider()
-    st.markdown(f"### 📬 Contact\nUne question ou une demande&nbsp;? Écrivez à **[{CONTACT_EMAIL}](mailto:{CONTACT_EMAIL})**")
+    st.markdown(f"### 📬 Contact\nA question or a request? Email **[{CONTACT_EMAIL}](mailto:{CONTACT_EMAIL})**")
 
 
 def main():
@@ -436,14 +436,14 @@ def main():
 
     with st.sidebar:
         st.markdown("## 🏛️ House of Servicing")
-        st.caption("Portail des Services")
+        st.caption("Service Portal")
         page = st.radio(
             "Navigation",
-            ["🏪 Marketplace", "➕ Proposer un service", "📈 Tableau de bord", "ℹ️ À propos"],
+            ["🏪 Marketplace", "➕ Request a service", "📈 Dashboard", "ℹ️ About"],
             label_visibility="collapsed",
         )
         st.divider()
-        st.caption("Catégories du catalogue")
+        st.caption("Catalog categories")
         for cat in sorted({s["category"] for s in services}):
             st.markdown(
                 f"<span style='color:{category_color(cat)};'>●</span> {cat}",
@@ -455,9 +455,9 @@ def main():
 
     if page == "🏪 Marketplace":
         page_marketplace(services)
-    elif page == "➕ Proposer un service":
-        page_propose(services)
-    elif page == "📈 Tableau de bord":
+    elif page == "➕ Request a service":
+        page_request(services)
+    elif page == "📈 Dashboard":
         page_dashboard(services)
     else:
         page_about()
