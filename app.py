@@ -4,10 +4,12 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 DATA_DIR = Path(__file__).parent / "data"
 SERVICES_FILE = DATA_DIR / "services.json"
 REQUESTS_FILE = DATA_DIR / "requests.json"
+COUNTS_FILE = DATA_DIR / "counts.json"
 
 CONTACT_EMAIL = "servicing@houseofservicing.com"
 
@@ -54,6 +56,22 @@ def save_request(entry):
         json.dump(requests, f, ensure_ascii=False, indent=2)
 
 
+def load_counts():
+    if COUNTS_FILE.exists():
+        with open(COUNTS_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def increment_count(service_id, url):
+    counts = load_counts()
+    counts[service_id] = counts.get(service_id, 0) + 1
+    COUNTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(COUNTS_FILE, "w", encoding="utf-8") as f:
+        json.dump(counts, f, ensure_ascii=False, indent=2)
+    st.session_state["_pending_open"] = url
+
+
 def category_color(category):
     return CATEGORY_THEMES.get(category, DEFAULT_THEME)
 
@@ -62,6 +80,13 @@ def inject_styles():
     st.markdown(
         """
         <style>
+        /* Theme forcé en CSS : indépendant de config.toml (Domino, proxys, etc.) */
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #0f172a; color: #e2e8f0; }
+        [data-testid="stHeader"] { background: transparent; }
+        section[data-testid="stSidebar"] { background-color: #1e293b; }
+        section[data-testid="stSidebar"] * { color: #e2e8f0; }
+        .stApp p, .stApp li, .stApp span, .stApp label, .stApp h1, .stApp h2,
+        .stApp h3, .stApp h4 { color: #e2e8f0; }
         .hos-hero {
             background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #7c3aed 100%);
             border-radius: 18px;
@@ -102,21 +127,23 @@ def inject_styles():
             padding: .1rem .5rem; border-radius: 6px; font-size: .72rem;
             margin: .15rem .2rem 0 0;
         }
-        a.hos-btn {
-            display: block; text-align: center; text-decoration: none;
-            background: #2563eb; color: #fff !important; font-weight: 600;
-            padding: .55rem; border-radius: 10px; margin-top: .8rem;
-            font-size: .9rem;
+        .hos-count {
+            font-size: .78rem; color: #38bdf8; font-weight: 600; margin: .6rem 0 .1rem;
         }
-        a.hos-btn:hover { background: #1d4ed8; }
-        a.hos-btn.disabled { background: #475569; pointer-events: none; opacity: .7; }
+        /* CTA natif Streamlit stylé en bouton bleu */
+        div[data-testid="stButton"] > button {
+            background: #2563eb; color: #fff; font-weight: 600; border: none;
+            border-radius: 10px; padding: .5rem; width: 100%;
+        }
+        div[data-testid="stButton"] > button:hover { background: #1d4ed8; color: #fff; }
+        div[data-testid="stButton"] > button:disabled { background: #475569; opacity: .7; }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 
-def render_card(service):
+def render_card(service, counts):
     color = category_color(service["category"])
     status_label, status_color = STATUS_LABELS.get(
         service["status"], ("Inconnu", "#64748b")
@@ -125,28 +152,43 @@ def render_card(service):
         f"<span class='hos-tag'>#{t}</span>" for t in service.get("tags", [])
     )
     is_live = service["status"] != "dev"
-    btn_class = "hos-btn" if is_live else "hos-btn disabled"
-    btn_label = "Accéder au service →" if is_live else "Bientôt disponible"
-    btn_href = service["url"] if is_live else "#"
+    sid = service["id"]
+    n_clicks = counts.get(sid, 0)
 
-    st.markdown(
-        f"""
-        <div class="hos-card">
-            <div class="hos-logo" style="background:{color}22;border:1px solid {color}55;">
-                {service['icon']}
+    with st.container():
+        st.markdown(
+            f"""
+            <div class="hos-card">
+                <div class="hos-logo" style="background:{color}22;border:1px solid {color}55;">
+                    {service['icon']}
+                </div>
+                <div class="hos-cat" style="color:{color};">{service['category']}</div>
+                <h3>{service['name']}</h3>
+                <span class="hos-badge" style="background:{status_color};">{status_label}</span>
+                <div class="hos-desc">{service['description']}</div>
+                <div class="hos-meta">⏱️ {service['frequency']} · 💪 ~{service['time_saved_h']} h/exécution économisées</div>
+                <div class="hos-meta">👥 {service['owner']}</div>
+                <div>{tags_html}</div>
+                <div class="hos-count">👆 {n_clicks} ouverture(s)</div>
             </div>
-            <div class="hos-cat" style="color:{color};">{service['category']}</div>
-            <h3>{service['name']}</h3>
-            <span class="hos-badge" style="background:{status_color};">{status_label}</span>
-            <div class="hos-desc">{service['description']}</div>
-            <div class="hos-meta">⏱️ {service['frequency']} · 💪 ~{service['time_saved_h']} h/exécution économisées</div>
-            <div class="hos-meta">👥 {service['owner']}</div>
-            <div>{tags_html}</div>
-            <a class="{btn_class}" href="{btn_href}" target="_blank">{btn_label}</a>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
+        if is_live:
+            st.button(
+                "Accéder au service →",
+                key=f"open_{sid}",
+                on_click=increment_count,
+                args=(sid, service["url"]),
+                use_container_width=True,
+            )
+        else:
+            st.button(
+                "Bientôt disponible",
+                key=f"open_{sid}",
+                disabled=True,
+                use_container_width=True,
+            )
 
 
 def page_marketplace(services):
@@ -184,14 +226,16 @@ def page_marketplace(services):
     )
     st.divider()
 
+    counts = load_counts()
     categories = sorted({s["category"] for s in services})
     total_saved = sum(s["time_saved_h"] for s in services)
     live_count = sum(1 for s in services if s["status"] == "live")
+    total_clicks = sum(counts.values())
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Services au catalogue", len(services))
     c2.metric("En production", live_count)
-    c3.metric("Catégories", len(categories))
+    c3.metric("Ouvertures cumulées", total_clicks)
     c4.metric("Heures économisées / cycle", f"~{total_saved} h")
 
     st.divider()
@@ -230,7 +274,20 @@ def page_marketplace(services):
         row = st.columns(cols_per_row)
         for col, service in zip(row, filtered[i : i + cols_per_row]):
             with col:
-                render_card(service)
+                render_card(service, counts)
+
+    pending = st.session_state.pop("_pending_open", None)
+    if pending:
+        components.html(
+            f"""
+            <script>window.open({json.dumps(pending)}, "_blank");</script>
+            <div style="font-family:sans-serif;font-size:.85rem;">
+                ↗ Le service s'ouvre dans un nouvel onglet.
+                <a href={json.dumps(pending)} target="_blank">Cliquez ici si rien ne se passe.</a>
+            </div>
+            """,
+            height=40,
+        )
 
 
 def page_propose(services):
@@ -312,6 +369,17 @@ def page_dashboard(services):
     st.subheader("Répartition par statut")
     status_names = df["status"].map(lambda s: STATUS_LABELS.get(s, ("?",))[0])
     st.bar_chart(status_names.value_counts())
+
+    counts = load_counts()
+    if counts:
+        st.divider()
+        st.subheader("Services les plus ouverts")
+        id_to_name = {s["id"]: s["name"] for s in services}
+        ranking = (
+            pd.Series({id_to_name.get(k, k): v for k, v in counts.items()})
+            .sort_values(ascending=False)
+        )
+        st.bar_chart(ranking)
 
     st.divider()
     st.subheader("Détail du catalogue")

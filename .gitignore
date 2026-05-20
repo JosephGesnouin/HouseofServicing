@@ -3,4 +3,5 @@ __pycache__/
 .venv/
 venv/
 data/requests.json
+data/counts.json
 .streamlit/secrets.toml
