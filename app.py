@@ -9,6 +9,8 @@ DATA_DIR = Path(__file__).parent / "data"
 SERVICES_FILE = DATA_DIR / "services.json"
 REQUESTS_FILE = DATA_DIR / "requests.json"
 
+CONTACT_EMAIL = "servicing@houseofservicing.com"
+
 STATUS_LABELS = {
     "live": ("En production", "#16a34a"),
     "beta": ("Bêta", "#d97706"),
@@ -149,15 +151,38 @@ def render_card(service):
 
 def page_marketplace(services):
     st.markdown(
-        """
+        f"""
         <div class="hos-hero">
             <h1>🏛️ Portail des Services — House of Servicing</h1>
-            <p>La marketplace de l'équipe Servicing. Vos macros d'hier deviennent des services centralisés,
-            fiables et accessibles en un clic.</p>
+            <p>La marketplace de l'équipe Servicing. Vos macros d'hier deviennent des services
+            centralisés, fiables et accessibles en un clic.</p>
+            <p style="font-size:.92rem;opacity:.85;margin-top:.6rem;">
+                ✉️ Une question, une demande&nbsp;? Écrivez-nous :
+                <a href="mailto:{CONTACT_EMAIL}" style="color:#bfdbfe;font-weight:600;">{CONTACT_EMAIL}</a>
+            </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    st.markdown(
+        """
+        #### À quoi sert ce portail&nbsp;?
+        L'équipe Servicing s'appuie sur de nombreuses **macros Excel/VBA** dispersées sur les postes.
+        Ce portail les **rassemble en un point d'entrée unique** : chaque traitement est progressivement
+        **industrialisé en service Python**, puis publié ici sous forme de vignette renvoyant directement
+        vers l'outil en ligne.
+        """
+    )
+    st.markdown(
+        """
+        - 🎯 **Trouver** le bon outil sans chercher dans les fichiers partagés
+        - 🛡️ **Fiabiliser** : des services maintenus et versionnés, plus des macros locales
+        - 📊 **Mesurer** le temps gagné et savoir qui maintient quoi
+        - ➕ **Proposer** une nouvelle macro à industrialiser via l'onglet dédié
+        """
+    )
+    st.divider()
 
     categories = sorted({s["category"] for s in services})
     total_saved = sum(s["time_saved_h"] for s in services)
@@ -333,6 +358,8 @@ def page_about():
         et elle apparaîtra automatiquement dans la marketplace.
         """
     )
+    st.divider()
+    st.markdown(f"### 📬 Contact\nUne question ou une demande&nbsp;? Écrivez à **[{CONTACT_EMAIL}](mailto:{CONTACT_EMAIL})**")
 
 
 def main():
@@ -354,6 +381,9 @@ def main():
                 f"<span style='color:{category_color(cat)};'>●</span> {cat}",
                 unsafe_allow_html=True,
             )
+        st.divider()
+        st.caption("📬 Contact")
+        st.markdown(f"[{CONTACT_EMAIL}](mailto:{CONTACT_EMAIL})")
 
     if page == "🏪 Marketplace":
         page_marketplace(services)
