@@ -71,8 +71,7 @@ HouseofServicing/
 │   └── config.toml                 # Theme (also forced in CSS for hosts that ignore it)
 ├── data/
 │   ├── services.json               # Service catalog metadata (committed)
-│   ├── requests.json               # Submitted "request a service" entries (runtime, gitignored)
-│   └── counts.json                 # Per-service open counts (runtime, gitignored)
+│   └── counts.json                 # Per-service open counts (runtime, persistent — see Deployment)
 ├── samples/                        # Sample input files, one per use case
 │   ├── iso_addresses_sample.csv
 │   ├── self_care_triage_sample.csv
@@ -105,13 +104,12 @@ HouseofServicing/
 | Function | Role |
 |---|---|
 | `inject_styles()` | All CSS, including the forced dark theme. |
-| `load_services()` / `load_counts()` / `load_requests()` | Persistence helpers for the JSON files in `data/`. |
+| `load_services()` / `load_counts()` | Persistence helpers for the JSON files in `data/`. |
 | `open_service(id)` / `go_back()` | Internal navigation — uses `st.query_params["service"]` to route within the portal. |
 | `render_card(service, counts)` | The marketplace tile (logo, status, counter, "Open service" button). |
 | `page_marketplace(services)` | Home view: hero, intro, metrics, search & filters, grid of cards. |
 | `page_service_detail(service)` | Per-service page: hero, What it does / Inputs / Outputs / Value, runner. |
 | `_render_run_section(service)` | The upload → process → download block. Looks up the processor via the registry. |
-| `page_request(services)` | "Request a new service" form. |
 | `page_dashboard(services)` | Catalog KPIs and charts (incl. most-opened services). |
 | `page_about()` | About page. |
 | `main()` | Sidebar nav + router. If `?service=<id>` is set and we're on Marketplace, render the detail page; otherwise render the selected page. |
@@ -384,15 +382,43 @@ That's the whole loop. No app code needs to change to add a new use case
 The portal is a plain Streamlit app and runs anywhere Streamlit runs.
 Two things to know if you deploy on Domino (or a similar managed host):
 
-1. `.streamlit/config.toml` is **not always read** by the host (different
-   working directory, host theme overrides, etc.). That's why the dark
-   theme is also forced in CSS inside `app.py`. Don't remove that block
-   unless you also confirm `config.toml` is picked up.
+### 1. The dark theme is forced in CSS
+`.streamlit/config.toml` is **not always read** by the host (different
+working directory, host theme overrides, etc.). That's why the dark
+theme is also forced in CSS inside `app.py` (`inject_styles()`). Don't
+remove that block unless you confirm `config.toml` is picked up.
 
-2. Runtime files (`data/requests.json`, `data/counts.json`) are written
-   to disk. On platforms with ephemeral storage they reset on each
-   container restart — fine for a demo, swap for a database (SQLite / a
-   real DB) if you need durable counters.
+### 2. Keep the open counter across restarts
+By default, click counts are written to `data/counts.json`. On Domino,
+the **project workspace is ephemeral**: when the app stops and restarts,
+the working directory is reset to the latest git state, so `counts.json`
+is lost.
+
+Point the counter at a persistent location via the **`HOS_COUNTS_FILE`**
+environment variable:
+
+```bash
+# Example: store counts in a Domino dataset (persistent across runs)
+export HOS_COUNTS_FILE=/domino/datasets/local/<your-dataset>/counts.json
+
+# Or on any container host with a persistent volume:
+export HOS_COUNTS_FILE=/mnt/persistent/houseofservicing/counts.json
+
+streamlit run app.py
+```
+
+In Domino, set it under **App Settings → Environment Variables** so it's
+applied to every run. Make sure the chosen path lives on a Domino
+Dataset (or another persistent mount) — files written under the project
+checkout are wiped at each restart.
+
+If `HOS_COUNTS_FILE` is not set, the file falls back to `data/counts.json`,
+which is fine for local development but ephemeral on Domino.
+
+For higher volumes (multi-user concurrent writes, dashboards across many
+services), swap the JSON file for a real DB (SQLite, Postgres) — the
+`load_counts` / `increment_count` helpers in `app.py` are the only two
+places to change.
 
 ---
 
@@ -401,8 +427,7 @@ Two things to know if you deploy on Domino (or a similar managed host):
 | File | Created by | Committed? |
 |---|---|---|
 | `data/services.json` | You (catalog) | ✅ Yes |
-| `data/requests.json` | "Request a service" form submissions | ❌ Gitignored |
-| `data/counts.json` | "Open service" clicks | ❌ Gitignored |
+| `counts.json` (path set by `HOS_COUNTS_FILE`, defaults to `data/counts.json`) | "Open service" clicks | ❌ Gitignored |
 
-If you want to seed counts or requests in a fresh deployment, commit a
-starter version of these files and remove them from `.gitignore`.
+If you want to seed counts in a fresh deployment, commit a starter
+version of `counts.json` and remove it from `.gitignore`.

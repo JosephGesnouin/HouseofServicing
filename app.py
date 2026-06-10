@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -10,8 +10,11 @@ from use_cases.registry import get_processor
 PROJECT_ROOT = Path(__file__).parent
 DATA_DIR = PROJECT_ROOT / "data"
 SERVICES_FILE = DATA_DIR / "services.json"
-REQUESTS_FILE = DATA_DIR / "requests.json"
-COUNTS_FILE = DATA_DIR / "counts.json"
+
+# Counters are persisted to a JSON file. On hosts with ephemeral storage
+# (Domino runs, containers, etc.), point HOS_COUNTS_FILE at a persistent
+# volume (e.g. /domino/datasets/<dataset>/counts.json or /mnt/data/...).
+COUNTS_FILE = Path(os.environ.get("HOS_COUNTS_FILE", DATA_DIR / "counts.json"))
 
 CONTACT_EMAIL = "servicing@houseofservicing.com"
 
@@ -42,21 +45,6 @@ st.set_page_config(
 def load_services():
     with open(SERVICES_FILE, encoding="utf-8") as f:
         return json.load(f)
-
-
-def load_requests():
-    if REQUESTS_FILE.exists():
-        with open(REQUESTS_FILE, encoding="utf-8") as f:
-            return json.load(f)
-    return []
-
-
-def save_request(entry):
-    requests = load_requests()
-    requests.append(entry)
-    REQUESTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(REQUESTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(requests, f, ensure_ascii=False, indent=2)
 
 
 def load_counts():
@@ -190,7 +178,7 @@ def render_card(service, counts):
                 <h3>{service['name']}</h3>
                 <span class="hos-badge" style="background:{status_color};">{status_label}</span>
                 <div class="hos-desc">{service['description']}</div>
-                <div class="hos-meta">⏱️ {service['frequency']} · 💪 ~{service['time_saved_h']} h saved/run</div>
+                <div class="hos-meta">⏱️ {service['frequency']} · 💪 X h saved/run</div>
                 <div class="hos-meta">👥 {service['owner']}</div>
                 <div>{tags_html}</div>
                 <div class="hos-count">👆 {n_clicks} open(s)</div>
@@ -244,15 +232,14 @@ def page_marketplace(services):
         """
         - 🎯 **Find** the right tool without digging through shared drives
         - 🛡️ **Trust** maintained, versioned services instead of local macros
-        - 📊 **Measure** time saved and know who owns what
-        - ➕ **Request** a new macro to industrialize via the dedicated tab
+        - 📊 **Measure** usage with built-in open counters per service
+        - 📥 **Run** each service directly: upload a file → process → download the result
         """
     )
     st.divider()
 
     counts = load_counts()
     categories = sorted({s["category"] for s in services})
-    total_saved = sum(s["time_saved_h"] for s in services)
     live_count = sum(1 for s in services if s["status"] == "live")
     total_clicks = sum(counts.values())
 
@@ -260,7 +247,7 @@ def page_marketplace(services):
     c1.metric("Services in catalog", len(services))
     c2.metric("Live", live_count)
     c3.metric("Total opens", total_clicks)
-    c4.metric("Hours saved / cycle", f"~{total_saved} h")
+    c4.metric("Hours saved / cycle", "X h")
 
     st.divider()
 
@@ -329,7 +316,7 @@ def page_service_detail(service):
             <p>
                 <span class="hos-badge" style="background:{status_color};">{status_label}</span>
                 &nbsp;·&nbsp; ⏱️ {service['frequency']}
-                &nbsp;·&nbsp; 💪 ~{service['time_saved_h']} h saved per run
+                &nbsp;·&nbsp; 💪 X h saved per run
                 &nbsp;·&nbsp; 👆 {n_clicks} open(s)
             </p>
             <p style="margin-top:.6rem;">{tags_html}</p>
@@ -391,7 +378,7 @@ def page_service_detail(service):
             <ul>
                 <li><strong>Owner:</strong> {service['owner']}</li>
                 <li><strong>Frequency:</strong> {service['frequency']}</li>
-                <li><strong>Estimated time saved:</strong> ~{service['time_saved_h']} h per run</li>
+                <li><strong>Estimated time saved:</strong> X h per run</li>
                 <li><strong>Source macro:</strong> <code>{service.get('origin_macro', '—')}</code></li>
                 <li><strong>Total opens:</strong> {n_clicks}</li>
             </ul>
@@ -478,80 +465,18 @@ def _render_run_section(service):
         )
 
 
-def page_request(services):
-    st.header("➕ Request a new service")
-    st.write(
-        "Have a macro to industrialize? Describe the need: the industrialization team "
-        "will turn it into a centralized Python service."
-    )
-
-    categories = sorted({s["category"] for s in services})
-
-    with st.form("request_form", clear_on_submit=True):
-        name = st.text_input("Service name *")
-        col1, col2 = st.columns(2)
-        category = col1.selectbox("Category *", categories + ["Other"])
-        frequency = col2.selectbox(
-            "Usage frequency", ["Daily", "Weekly", "Monthly", "Ad hoc"]
-        )
-        description = st.text_area("Describe the need *")
-        col3, col4 = st.columns(2)
-        origin_macro = col3.text_input("Source macro (.xlsm file)")
-        time_saved = col4.number_input(
-            "Estimated time saved (h / run)", min_value=0.0, value=1.0, step=0.5
-        )
-        requester = st.text_input("Your name / team *")
-        submitted = st.form_submit_button("Submit request")
-
-        if submitted:
-            if not (name and description and requester):
-                st.error("Please fill in the required fields (*).")
-            else:
-                save_request(
-                    {
-                        "name": name,
-                        "category": category,
-                        "frequency": frequency,
-                        "description": description,
-                        "origin_macro": origin_macro,
-                        "time_saved_h": time_saved,
-                        "requester": requester,
-                        "status": "requested",
-                        "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    }
-                )
-                st.success(f"Request “{name}” saved. Thank you!")
-
-    requests = load_requests()
-    if requests:
-        st.divider()
-        st.subheader(f"📋 Open requests ({len(requests)})")
-        df = pd.DataFrame(requests)
-        cols = [
-            c
-            for c in ["submitted_at", "name", "category", "requester", "status"]
-            if c in df.columns
-        ]
-        st.dataframe(df[cols], use_container_width=True, hide_index=True)
-
-
 def page_dashboard(services):
     st.header("📈 Catalog dashboard")
     df = pd.DataFrame(services)
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Total services", len(df))
-    c2.metric("Hours saved / cycle", f"~{int(df['time_saved_h'].sum())} h")
+    c2.metric("Hours saved / cycle", "X h")
     c3.metric("Categories covered", df["category"].nunique())
 
     st.divider()
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Services by category")
-        st.bar_chart(df["category"].value_counts())
-    with col2:
-        st.subheader("Hours saved by category")
-        st.bar_chart(df.groupby("category")["time_saved_h"].sum())
+    st.subheader("Services by category")
+    st.bar_chart(df["category"].value_counts())
 
     st.divider()
     st.subheader("Breakdown by status")
@@ -572,18 +497,18 @@ def page_dashboard(services):
     st.divider()
     st.subheader("Catalog details")
     view = df[
-        ["name", "category", "status", "frequency", "time_saved_h", "owner", "origin_macro"]
+        ["name", "category", "status", "frequency", "owner", "origin_macro"]
     ].rename(
         columns={
             "name": "Service",
             "category": "Category",
             "status": "Status",
             "frequency": "Frequency",
-            "time_saved_h": "Hours saved",
             "owner": "Team",
             "origin_macro": "Source macro",
         }
     )
+    view.insert(4, "Hours saved", "X")
     st.dataframe(view, use_container_width=True, hide_index=True)
 
 
@@ -628,7 +553,7 @@ def main():
         st.caption("Service Portal")
         page = st.radio(
             "Navigation",
-            ["🏪 Marketplace", "➕ Request a service", "📈 Dashboard", "ℹ️ About"],
+            ["🏪 Marketplace", "📈 Dashboard", "ℹ️ About"],
             label_visibility="collapsed",
         )
         prev = st.session_state.get("_prev_page")
@@ -658,8 +583,6 @@ def main():
 
     if page == "🏪 Marketplace":
         page_marketplace(services)
-    elif page == "➕ Request a service":
-        page_request(services)
     elif page == "📈 Dashboard":
         page_dashboard(services)
     else:
