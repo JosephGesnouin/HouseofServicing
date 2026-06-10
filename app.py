@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 DATA_DIR = Path(__file__).parent / "data"
 SERVICES_FILE = DATA_DIR / "services.json"
@@ -20,12 +19,13 @@ STATUS_LABELS = {
 }
 
 CATEGORY_THEMES = {
+    "Data Management": "#059669",
+    "Client Relations": "#db2777",
+    "Document Generation": "#f59e0b",
+    "Payments & Collections": "#0891b2",
     "Reconciliation": "#2563eb",
     "Reporting & Monitoring": "#7c3aed",
-    "Payments & Collections": "#0891b2",
     "Compliance & Controls": "#dc2626",
-    "Client Relations": "#db2777",
-    "Data Management": "#059669",
 }
 DEFAULT_THEME = "#475569"
 
@@ -63,13 +63,22 @@ def load_counts():
     return {}
 
 
-def increment_count(service_id, url):
+def increment_count(service_id):
     counts = load_counts()
     counts[service_id] = counts.get(service_id, 0) + 1
     COUNTS_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(COUNTS_FILE, "w", encoding="utf-8") as f:
         json.dump(counts, f, ensure_ascii=False, indent=2)
-    st.session_state["_pending_open"] = url
+
+
+def open_service(service_id):
+    increment_count(service_id)
+    st.query_params["service"] = service_id
+
+
+def go_back():
+    if "service" in st.query_params:
+        del st.query_params["service"]
 
 
 def category_color(category):
@@ -130,6 +139,18 @@ def inject_styles():
         .hos-count {
             font-size: .78rem; color: #38bdf8; font-weight: 600; margin: .6rem 0 .1rem;
         }
+        .hos-section {
+            background: #1e293b; border: 1px solid #334155; border-radius: 14px;
+            padding: 1.1rem 1.3rem; margin-bottom: 1rem;
+        }
+        .hos-section h4 { margin: 0 0 .5rem; font-size: 1rem; color: #f1f5f9; }
+        .hos-section ul { margin: 0; padding-left: 1.1rem; }
+        .hos-section li { color: #cbd5e1; margin: .25rem 0; }
+        .hos-detail-logo {
+            width: 76px; height: 76px; border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 38px; margin-bottom: .6rem;
+        }
         /* Native Streamlit CTA styled as a blue button */
         div[data-testid="stButton"] > button {
             background: #2563eb; color: #fff; font-weight: 600; border: none;
@@ -178,8 +199,8 @@ def render_card(service, counts):
             st.button(
                 "Open service →",
                 key=f"open_{sid}",
-                on_click=increment_count,
-                args=(sid, service["url"]),
+                on_click=open_service,
+                args=(sid,),
                 use_container_width=True,
             )
         else:
@@ -212,8 +233,8 @@ def page_marketplace(services):
         #### What is this portal for?
         The Servicing team relies on many **Excel/VBA macros** scattered across workstations.
         This portal **brings them together in a single entry point**: each process is gradually
-        **industrialized into a Python service**, then published here as a tile linking directly
-        to the online tool.
+        **industrialized into a Python service**, then published here with its own dedicated page
+        explaining what it does, its inputs and its outputs.
         """
     )
     st.markdown(
@@ -276,18 +297,107 @@ def page_marketplace(services):
             with col:
                 render_card(service, counts)
 
-    pending = st.session_state.pop("_pending_open", None)
-    if pending:
-        components.html(
+
+def page_service_detail(service):
+    color = category_color(service["category"])
+    status_label, status_color = STATUS_LABELS.get(
+        service["status"], ("Unknown", "#64748b")
+    )
+    sid = service["id"]
+    counts = load_counts()
+    n_clicks = counts.get(sid, 0)
+
+    top_left, top_right = st.columns([1, 5])
+    with top_left:
+        st.button("← Back", key="back_btn", on_click=go_back, use_container_width=True)
+
+    tags_html = "".join(
+        f"<span class='hos-tag'>#{t}</span>" for t in service.get("tags", [])
+    )
+
+    st.markdown(
+        f"""
+        <div class="hos-hero" style="background: linear-gradient(135deg, {color} 0%, #1e293b 100%);">
+            <div class="hos-detail-logo" style="background:{color}33;border:1px solid {color}88;">
+                {service['icon']}
+            </div>
+            <div class="hos-cat" style="color:#e0e7ff;">{service['category']}</div>
+            <h1>{service['name']}</h1>
+            <p>
+                <span class="hos-badge" style="background:{status_color};">{status_label}</span>
+                &nbsp;·&nbsp; ⏱️ {service['frequency']}
+                &nbsp;·&nbsp; 💪 ~{service['time_saved_h']} h saved per run
+                &nbsp;·&nbsp; 👆 {n_clicks} open(s)
+            </p>
+            <p style="margin-top:.6rem;">{tags_html}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"""
+        <div class="hos-section">
+            <h4>🎯 What it does</h4>
+            <p style="color:#cbd5e1;margin:0;">{service.get('purpose', service['description'])}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        inputs_html = "".join(f"<li>{i}</li>" for i in service.get("inputs", []))
+        st.markdown(
             f"""
-            <script>window.open({json.dumps(pending)}, "_blank");</script>
-            <div style="font-family:sans-serif;font-size:.85rem;">
-                ↗ The service is opening in a new tab.
-                <a href={json.dumps(pending)} target="_blank">Click here if nothing happens.</a>
+            <div class="hos-section">
+                <h4>📥 Input(s)</h4>
+                <ul>{inputs_html or '<li>—</li>'}</ul>
             </div>
             """,
-            height=40,
+            unsafe_allow_html=True,
         )
+    with col2:
+        outputs_html = "".join(f"<li>{o}</li>" for o in service.get("outputs", []))
+        st.markdown(
+            f"""
+            <div class="hos-section">
+                <h4>📤 Output(s)</h4>
+                <ul>{outputs_html or '<li>—</li>'}</ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    benefits_html = "".join(f"<li>{b}</li>" for b in service.get("benefits", []))
+    if benefits_html:
+        st.markdown(
+            f"""
+            <div class="hos-section">
+                <h4>💎 Value &amp; benefits</h4>
+                <ul>{benefits_html}</ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(
+        f"""
+        <div class="hos-section">
+            <h4>📌 Service info</h4>
+            <ul>
+                <li><strong>Owner:</strong> {service['owner']}</li>
+                <li><strong>Frequency:</strong> {service['frequency']}</li>
+                <li><strong>Estimated time saved:</strong> ~{service['time_saved_h']} h per run</li>
+                <li><strong>Source macro:</strong> <code>{service.get('origin_macro', '—')}</code></li>
+                <li><strong>Total opens:</strong> {n_clicks}</li>
+            </ul>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.caption(f"Need help with this service? Contact {CONTACT_EMAIL}")
 
 
 def page_request(services):
@@ -408,8 +518,8 @@ def page_about():
 
         ### The principle
         The team maintains many **Excel/VBA macros**. Each macro is gradually
-        **industrialized into a Python service**, then published here as a tile
-        linking to the online service.
+        **industrialized into a Python service** and gets its own dedicated page
+        in the portal — describing what it does, its inputs and its outputs.
 
         ### Why
         - **Centralize**: a single entry point instead of scattered files.
@@ -422,8 +532,9 @@ def page_about():
         `Beta` → `Live`
 
         ### Add / edit a service
-        The catalog is driven by the `data/services.json` file. Add an entry there
-        and it will automatically appear in the marketplace.
+        The catalog is driven by the `data/services.json` file. Each entry exposes
+        a `purpose`, `inputs`, `outputs` and `benefits` block which feeds the
+        dedicated service page.
         """
     )
     st.divider()
@@ -442,6 +553,11 @@ def main():
             ["🏪 Marketplace", "➕ Request a service", "📈 Dashboard", "ℹ️ About"],
             label_visibility="collapsed",
         )
+        prev = st.session_state.get("_prev_page")
+        if prev is not None and prev != page and "service" in st.query_params:
+            del st.query_params["service"]
+        st.session_state["_prev_page"] = page
+
         st.divider()
         st.caption("Catalog categories")
         for cat in sorted({s["category"] for s in services}):
@@ -452,6 +568,15 @@ def main():
         st.divider()
         st.caption("📬 Contact")
         st.markdown(f"[{CONTACT_EMAIL}](mailto:{CONTACT_EMAIL})")
+
+    service_id = st.query_params.get("service")
+    if page == "🏪 Marketplace" and service_id:
+        service = next((s for s in services if s["id"] == service_id), None)
+        if service:
+            page_service_detail(service)
+            return
+        else:
+            del st.query_params["service"]
 
     if page == "🏪 Marketplace":
         page_marketplace(services)

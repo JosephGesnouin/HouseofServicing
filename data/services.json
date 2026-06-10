@@ -1,170 +1,110 @@
 [
   {
-    "id": "rapprochement-bancaire",
-    "name": "Bank Reconciliation",
-    "category": "Reconciliation",
-    "icon": "🔄",
-    "description": "Automatically reconciles accounting entries with bank statements, flags discrepancies and generates an exceptions report.",
-    "url": "https://example.com/services/bank-reconciliation",
-    "status": "live",
-    "owner": "Reconciliation Team",
-    "tags": ["bank", "discrepancies", "accounting"],
-    "frequency": "Daily",
-    "time_saved_h": 6,
-    "origin_macro": "RECO_BANK_V4.xlsm"
-  },
-  {
-    "id": "reporting-encours",
-    "name": "Outstandings Reporting",
-    "category": "Reporting & Monitoring",
-    "icon": "📊",
-    "description": "Consolidates managed outstandings and produces the weekly dashboard with key indicators and ready-to-share charts.",
-    "url": "https://example.com/services/outstandings-reporting",
-    "status": "live",
-    "owner": "Monitoring Team",
-    "tags": ["kpi", "dashboard", "outstandings"],
-    "frequency": "Weekly",
-    "time_saved_h": 4,
-    "origin_macro": "REPORT_ENCOURS.xlsm"
-  },
-  {
-    "id": "extraction-paiements",
-    "name": "Payments Extraction",
-    "category": "Payments & Collections",
-    "icon": "💳",
-    "description": "Extracts, checks and formats payment files for the collection system, with SEPA format validation.",
-    "url": "https://example.com/services/payments-extraction",
-    "status": "live",
-    "owner": "Payments Team",
-    "tags": ["sepa", "collection", "files"],
-    "frequency": "Daily",
-    "time_saved_h": 3,
-    "origin_macro": "PAIEMENTS_SEPA.xlsm"
-  },
-  {
-    "id": "controle-conformite",
-    "name": "Compliance Check",
-    "category": "Compliance & Controls",
-    "icon": "✅",
-    "description": "Applies regulatory control rules to managed files and flags non-conformities to be handled as a priority.",
-    "url": "https://example.com/services/compliance-check",
-    "status": "beta",
-    "owner": "Compliance Team",
-    "tags": ["regulatory", "control", "audit"],
-    "frequency": "Monthly",
-    "time_saved_h": 8,
-    "origin_macro": "CTRL_CONFORM.xlsm"
-  },
-  {
-    "id": "lettrage-comptes",
-    "name": "Account Matching",
-    "category": "Reconciliation",
-    "icon": "🧾",
-    "description": "Automatically matches customer and supplier accounts and proposes partial matches for validation.",
-    "url": "https://example.com/services/account-matching",
-    "status": "live",
-    "owner": "Reconciliation Team",
-    "tags": ["matching", "accounts", "customers"],
-    "frequency": "Daily",
-    "time_saved_h": 5,
-    "origin_macro": "LETTRAGE_AUTO.xlsm"
-  },
-  {
-    "id": "relances-clients",
-    "name": "Dunning Campaign",
-    "category": "Client Relations",
-    "icon": "📨",
-    "description": "Generates personalized dunning letters and emails from overdue files and schedules the sends.",
-    "url": "https://example.com/services/dunning-campaign",
-    "status": "live",
-    "owner": "Client Relations Team",
-    "tags": ["dunning", "letters", "mailmerge"],
-    "frequency": "Weekly",
-    "time_saved_h": 4,
-    "origin_macro": "RELANCES_MAILMERGE.xlsm"
-  },
-  {
-    "id": "qualite-donnees",
-    "name": "Data Quality",
+    "id": "iso-addresses",
+    "name": "ISO-Structured Addresses",
     "category": "Data Management",
-    "icon": "🗄️",
-    "description": "Checks the consistency and completeness of customer reference data, normalizes addresses and removes duplicates.",
-    "url": "https://example.com/services/data-quality",
-    "status": "beta",
+    "icon": "📮",
+    "status": "live",
     "owner": "Data Team",
-    "tags": ["reference-data", "duplicates", "normalization"],
-    "frequency": "Monthly",
-    "time_saved_h": 7,
-    "origin_macro": "DQ_REFERENTIEL.xlsm"
-  },
-  {
-    "id": "calcul-interets",
-    "name": "Interest Calculation",
-    "category": "Payments & Collections",
-    "icon": "🧮",
-    "description": "Calculates interest and repayment schedules according to current rate tables and produces the related payment notices.",
-    "url": "https://example.com/services/interest-calculation",
-    "status": "live",
-    "owner": "Payments Team",
-    "tags": ["interest", "schedule", "rates"],
-    "frequency": "Monthly",
-    "time_saved_h": 5,
-    "origin_macro": "CALC_INTERETS.xlsm"
-  },
-  {
-    "id": "extraction-grand-livre",
-    "name": "General Ledger Export",
-    "category": "Reporting & Monitoring",
-    "icon": "📒",
-    "description": "Extracts the general ledger by period, applies analytical groupings and exports in the format expected by accounting.",
-    "url": "https://example.com/services/general-ledger-export",
-    "status": "live",
-    "owner": "Monitoring Team",
-    "tags": ["ledger", "analytics", "export"],
-    "frequency": "Monthly",
+    "frequency": "Daily",
     "time_saved_h": 3,
-    "origin_macro": "EXPORT_GL.xlsm"
+    "tags": ["iso", "addresses", "normalization", "pilot"],
+    "origin_macro": "ADRESSE_ISO.xlsm",
+    "description": "Automates address structuring to ISO standards — pilot use case to launch the portal.",
+    "purpose": "Turn raw, unstructured customer addresses into a clean, ISO-compliant structured format, run an automated conformity check, and draft a clear customer email explaining the result.",
+    "inputs": [
+      "Free-form customer address (single line or paragraph)",
+      "Optional: country and language preferences"
+    ],
+    "outputs": [
+      "Structured address fields (street, number, postal code, city, country) in ISO format",
+      "Conformity report flagging compliant vs. non-compliant addresses",
+      "Ready-to-send customer email explaining the changes"
+    ],
+    "benefits": [
+      "Standardized, high-quality address data",
+      "Automatic conformity control",
+      "Polished, educational client communication"
+    ]
   },
   {
-    "id": "suivi-impayes",
-    "name": "Arrears Tracking",
+    "id": "self-care-triage",
+    "name": "Self-Care Request Triage",
     "category": "Client Relations",
-    "icon": "⚠️",
-    "description": "Identifies and categorizes arrears, computes debt aging and feeds the collections monitoring.",
-    "url": "https://example.com/services/arrears-tracking",
+    "icon": "🧭",
     "status": "beta",
     "owner": "Client Relations Team",
-    "tags": ["arrears", "collections", "aging"],
     "frequency": "Daily",
+    "time_saved_h": 5,
+    "tags": ["self-care", "triage", "routing"],
+    "origin_macro": "SELF_CARE_TRIAGE.xlsm",
+    "description": "Identifies which incoming requests the client can handle on their own, and routes them to self-service journeys.",
+    "purpose": "Automatically detect simple requests, redirect them to actions the client can complete autonomously, and cut down on manual handling by the team.",
+    "inputs": [
+      "Incoming client request (subject + body)",
+      "Optional: client segment and contract metadata"
+    ],
+    "outputs": [
+      "Triage label: self-care eligible vs. requires an agent",
+      "Suggested self-service link when eligible",
+      "Routing decision for the case management system"
+    ],
+    "benefits": [
+      "Lower inbound request volumes",
+      "Faster turnaround for clients",
+      "Better allocation of team resources"
+    ]
+  },
+  {
+    "id": "authority-letter",
+    "name": "Authority Letter Generator",
+    "category": "Document Generation",
+    "icon": "📝",
+    "status": "live",
+    "owner": "Documentation Team",
+    "frequency": "Weekly",
     "time_saved_h": 4,
-    "origin_macro": "SUIVI_IMPAYES.xlsm"
+    "tags": ["documents", "letters", "automation"],
+    "origin_macro": "AUTHORITY_LETTER.xlsm",
+    "description": "Generates authority letters automatically from an Excel input file.",
+    "purpose": "Produce standardized authority letters from structured Excel data, with consistent formatting and no manual document assembly.",
+    "inputs": [
+      "Excel file (.xls / .xlsx) containing the required client and authority fields"
+    ],
+    "outputs": [
+      "Generated authority letter (PDF / DOCX) per record",
+      "Standardized formatting following the official template"
+    ],
+    "benefits": [
+      "Removes repetitive document-assembly work",
+      "Ensures documentation reliability and consistency"
+    ]
   },
   {
-    "id": "controle-doublons-paiements",
-    "name": "Duplicate Payment Detection",
-    "category": "Compliance & Controls",
-    "icon": "🔍",
-    "description": "Detects potential duplicate payments before transmission and blocks suspicious entries for review.",
-    "url": "https://example.com/services/duplicate-payment-detection",
-    "status": "dev",
-    "owner": "Compliance Team",
-    "tags": ["duplicates", "fraud", "control"],
+    "id": "mt103-proof-of-payment",
+    "name": "MT103 / XML → Proof of Payment",
+    "category": "Payments & Collections",
+    "icon": "💸",
+    "status": "live",
+    "owner": "Payments Team",
     "frequency": "Daily",
-    "time_saved_h": 2,
-    "origin_macro": "DOUBLONS_PAY.xlsm"
-  },
-  {
-    "id": "import-flux-externes",
-    "name": "External Feed Import",
-    "category": "Data Management",
-    "icon": "📥",
-    "description": "Retrieves and integrates external partner files, checks formats and logs rejections.",
-    "url": "https://example.com/services/external-feed-import",
-    "status": "dev",
-    "owner": "Data Team",
-    "tags": ["feeds", "partners", "integration"],
-    "frequency": "Daily",
-    "time_saved_h": 3,
-    "origin_macro": "IMPORT_FLUX.xlsm"
+    "time_saved_h": 5,
+    "tags": ["mt103", "swift", "xml", "payments"],
+    "origin_macro": "PROOF_OF_PAYMENT.xlsm",
+    "description": "Turns MT103 and XML payment messages into client-ready proofs of payment.",
+    "purpose": "Read SWIFT MT103 messages or XML payment flows, extract the key payment data, and generate a clean proof-of-payment document to share with the client.",
+    "inputs": [
+      "SWIFT MT103 message file",
+      "or XML payment flow file"
+    ],
+    "outputs": [
+      "Extracted key payment fields (amount, beneficiary, reference, value date, BIC, ...)",
+      "Formatted proof-of-payment document (PDF)"
+    ],
+    "benefits": [
+      "Faster processing of payment proofs",
+      "Fewer manual manipulations",
+      "Higher accuracy and traceability"
+    ]
   }
 ]
