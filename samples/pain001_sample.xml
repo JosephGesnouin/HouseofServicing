@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.09">
+  <CstmrCdtTrfInitn>
+    <GrpHdr>
+      <MsgId>MSG-2024-001</MsgId>
+      <CreDtTm>2024-01-15T10:30:00</CreDtTm>
+    </GrpHdr>
+    <PmtInf>
+      <CdtTrfTxInf>
+        <PmtId>
+          <EndToEndId>E2E-12345</EndToEndId>
+        </PmtId>
+        <Amt>
+          <InstdAmt Ccy="EUR">1500.00</InstdAmt>
+        </Amt>
+        <Cdtr>
+          <Nm>John Doe</Nm>
+        </Cdtr>
+        <Dbtr>
+          <Nm>ACME Corp</Nm>
+        </Dbtr>
+        <RmtInf>
+          <Ustrd>Invoice 2024/0042</Ustrd>
+        </RmtInf>
+      </CdtTrfTxInf>
+    </PmtInf>
+  </CstmrCdtTrfInitn>
+</Document>

@@ -5,7 +5,10 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-DATA_DIR = Path(__file__).parent / "data"
+from use_cases.registry import get_processor
+
+PROJECT_ROOT = Path(__file__).parent
+DATA_DIR = PROJECT_ROOT / "data"
 SERVICES_FILE = DATA_DIR / "services.json"
 REQUESTS_FILE = DATA_DIR / "requests.json"
 COUNTS_FILE = DATA_DIR / "counts.json"
@@ -397,7 +400,82 @@ def page_service_detail(service):
         unsafe_allow_html=True,
     )
 
+    _render_run_section(service)
+
     st.caption(f"Need help with this service? Contact {CONTACT_EMAIL}")
+
+
+def _render_run_section(service):
+    proc = get_processor(service["id"])
+    if proc is None:
+        st.markdown(
+            """
+            <div class="hos-section">
+                <h4>🚀 Run this service</h4>
+                <p style="color:#94a3b8;margin:0;">
+                    No processor is connected yet for this service. Add one in
+                    <code>use_cases/&lt;your_uc&gt;/processor.py</code> and register it in
+                    <code>use_cases/registry.py</code>.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return
+
+    sid = service["id"]
+    st.markdown(
+        f"""
+        <div class="hos-section">
+            <h4>🚀 Run this service</h4>
+            <p style="color:#cbd5e1;margin:.2rem 0;"><strong>Expected input:</strong> {proc.INPUT_DESCRIPTION}</p>
+            <p style="color:#cbd5e1;margin:.2rem 0;"><strong>You will get back:</strong> {proc.OUTPUT_DESCRIPTION}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    sample_path_attr = getattr(proc, "SAMPLE_FILE", None)
+    if sample_path_attr:
+        sample_path = PROJECT_ROOT / sample_path_attr
+        if sample_path.exists():
+            st.download_button(
+                f"📎 Download sample input ({sample_path.name})",
+                data=sample_path.read_bytes(),
+                file_name=sample_path.name,
+                key=f"sample_{sid}",
+            )
+
+    uploaded = st.file_uploader(
+        "Upload your input file",
+        type=proc.INPUT_FORMATS,
+        key=f"upload_{sid}",
+    )
+
+    if uploaded is not None:
+        if st.button("▶︎ Run processing", key=f"run_{sid}", use_container_width=True):
+            try:
+                with st.spinner("Processing..."):
+                    output_bytes, output_name, mime = proc.process(
+                        uploaded.getvalue(), uploaded.name
+                    )
+                st.session_state[f"result_{sid}"] = (output_bytes, output_name, mime)
+                st.success("Processing complete — your file is ready below.")
+            except Exception as exc:
+                st.session_state.pop(f"result_{sid}", None)
+                st.error(f"Processing failed: {exc}")
+
+    result = st.session_state.get(f"result_{sid}")
+    if result:
+        output_bytes, output_name, mime = result
+        st.download_button(
+            f"⬇️ Download result ({output_name})",
+            data=output_bytes,
+            file_name=output_name,
+            mime=mime,
+            key=f"download_{sid}",
+            use_container_width=True,
+        )
 
 
 def page_request(services):
